@@ -1,0 +1,42 @@
+#version: '3.9'
+services:
+  nextcloud:
+    image: nextcloud:31
+    container_name: nextcloud
+    restart: unless-stopped
+    volumes:
+      - ./app/html:/var/www/html
+      - ./app/apps:/var/www/html/custom_apps
+      - ./app/config:/var/www/html/config
+      - ./app/data:/var/www/html/data
+    environment:
+      - MYSQL_PASSWORD=secret
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_HOST=db
+    ports:
+      - "127.0.0.1:8080:80"
+
+  db:
+    image: mariadb:10.6
+    container_name: nextcloud-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=verysecret
+      - MYSQL_PASSWORD=secret
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+    volumes:
+      - ./db_data:/var/lib/mysql
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: nc-coturn
+    restart: unless-stopped
+    volumes:
+      - ./turn/turnserver.conf:/etc/turnserver.conf:ro
+      - /etc/letsencrypt/live/domain_name/fullchain.pem:/etc/turnserver-cert.pem:ro
+      - /etc/letsencrypt/live/domain_name/privkey.pem:/etc/turnserver-key.pem:ro
+      - ./turn/lib:/var/lib/turn
+    ports:
+      - "0.0.0.0:5349:5349"
